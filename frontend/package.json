@@ -1,0 +1,7 @@
+{
+  "name": "play-with-maths-frontend",
+  "version": "1.0.0",
+  "scripts": {
+    "build": "git clone https://github.com/flutter/flutter.git --depth 1 -b stable flutter-sdk && export PATH=$PATH:$(pwd)/flutter-sdk/bin && flutter-sdk/bin/flutter pub get && flutter-sdk/bin/flutter build web --release"
+  }
+}
