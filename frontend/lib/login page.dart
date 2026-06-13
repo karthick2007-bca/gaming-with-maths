@@ -84,23 +84,24 @@ class _LoginSignupPageState extends State<LoginSignupPage>
   String? _validatePassword(String? v) =>
       (v == null || v.length < 4) ? 'Minimum 4 characters' : null;
 
+  bool _isLoading = false;
+
   void _login() {
-    if (_loginFormKey.currentState!.validate()) {
-      final name = _loginName.text.trim();
-      final password = _loginPassword.text.trim();
-      if (name == 'admin' && password == '2007') {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const sowda12page()),
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('❌ Invalid username or password'),
-            backgroundColor: Colors.redAccent,
-          ),
-        );
-      }
+    if (!_loginFormKey.currentState!.validate()) return;
+    final name = _loginName.text.trim();
+    final password = _loginPassword.text.trim();
+    if (name == 'admin' && password == '2007') {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const sowda12page()),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('❌ Invalid username or password'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
     }
   }
 
@@ -282,7 +283,7 @@ class _LoginSignupPageState extends State<LoginSignupPage>
 
                               // Login button
                               GestureDetector(
-                                onTap: _login,
+                                onTap: _isLoading ? null : _login,
                                 child: Container(
                                   width: double.infinity,
                                   padding: const EdgeInsets.symmetric(vertical: 16),
@@ -303,22 +304,27 @@ class _LoginSignupPageState extends State<LoginSignupPage>
                                       ),
                                     ],
                                   ),
-                                  child: const Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Text('🚀 ',
-                                          style: TextStyle(fontSize: 20)),
-                                      Text(
-                                        "LET'S GO!",
-                                        style: TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.w900,
-                                          letterSpacing: 2,
+                                  child: _isLoading
+                                      ? const Center(
+                                          child: CircularProgressIndicator(
+                                              color: Colors.white))
+                                      : const Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          children: [
+                                            Text('🚀 ',
+                                                style: TextStyle(fontSize: 20)),
+                                            Text(
+                                              "LET'S GO!",
+                                              style: TextStyle(
+                                                color: Colors.white,
+                                                fontSize: 18,
+                                                fontWeight: FontWeight.w900,
+                                                letterSpacing: 2,
+                                              ),
+                                            ),
+                                          ],
                                         ),
-                                      ),
-                                    ],
-                                  ),
                                 ),
                               ),
 

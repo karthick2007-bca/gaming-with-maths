@@ -12,24 +12,20 @@ class ClassDetailPage extends StatefulWidget {
 
 class _ClassDetailPageState extends State<ClassDetailPage>
     with TickerProviderStateMixin {
-  // ── Game state ──
   int _team1Score = 0;
   int _team2Score = 0;
-  double _ropeOffset = 0.0; // -1.0 (team1 wins) to 1.0 (team2 wins)
+  double _ropeOffset = 0.0;
   bool _gameStarted = false;
   bool _gameOver = false;
   int? _winnerTeam;
 
-  // ── Timer ──
   int _seconds = 60;
   Timer? _timer;
 
-  // ── Questions ──
   late Map<String, int> _q1;
   late Map<String, int> _q2;
   final _rand = Random();
 
-  // ── Rope animation ──
   late AnimationController _ropeAnim;
   late AnimationController _pulseAnim;
   late AnimationController _tugAnim;
@@ -68,40 +64,40 @@ class _ClassDetailPageState extends State<ClassDetailPage>
     switch (op) {
       case '+':
         if (diff.contains('EASY')) {
-          a = _rand.nextInt(9) + 10;  // 10-18
-          b = _rand.nextInt(9) + 1;   // 1-9
+          a = _rand.nextInt(9) + 10;
+          b = _rand.nextInt(9) + 1;
         } else if (diff.contains('MEDIUM')) {
-          a = _rand.nextInt(9) + 10;  // 10-18
-          b = _rand.nextInt(9) + 10;  // 10-18
+          a = _rand.nextInt(9) + 10;
+          b = _rand.nextInt(9) + 10;
         } else {
-          a = _rand.nextInt(20) + 30; // 30-49
-          b = _rand.nextInt(20) + 20; // 20-39
+          a = _rand.nextInt(20) + 30;
+          b = _rand.nextInt(20) + 20;
         }
         ans = a + b;
         break;
       case '-':
         if (diff.contains('EASY')) {
-          a = _rand.nextInt(9) + 10;  // 10-18
-          b = _rand.nextInt(8) + 1;   // 1-8
+          a = _rand.nextInt(9) + 10;
+          b = _rand.nextInt(8) + 1;
         } else if (diff.contains('MEDIUM')) {
-          a = _rand.nextInt(10) + 15; // 15-24
-          b = _rand.nextInt(9) + 10;  // 10-18
+          a = _rand.nextInt(10) + 15;
+          b = _rand.nextInt(9) + 10;
         } else {
-          a = _rand.nextInt(20) + 50; // 50-69
-          b = _rand.nextInt(20) + 20; // 20-39
+          a = _rand.nextInt(20) + 50;
+          b = _rand.nextInt(20) + 20;
         }
         ans = a - b;
         break;
-      default: // ×
+      default:
         if (diff.contains('EASY')) {
-          a = _rand.nextInt(3) + 2;   // 2-4
-          b = _rand.nextInt(4) + 2;   // 2-5
+          a = _rand.nextInt(3) + 2;
+          b = _rand.nextInt(4) + 2;
         } else if (diff.contains('MEDIUM')) {
-          a = _rand.nextInt(4) + 4;   // 4-7
-          b = _rand.nextInt(4) + 4;   // 4-7
+          a = _rand.nextInt(4) + 4;
+          b = _rand.nextInt(4) + 4;
         } else {
-          a = _rand.nextInt(5) + 10;  // 10-14
-          b = _rand.nextInt(5) + 3;   // 3-7
+          a = _rand.nextInt(5) + 10;
+          b = _rand.nextInt(5) + 3;
         }
         ans = a * b;
     }
@@ -126,6 +122,7 @@ class _ClassDetailPageState extends State<ClassDetailPage>
       _seconds = 60;
       _winnerTeam = null;
     });
+    _generateQuestions();
     _timer?.cancel();
     _timer = Timer.periodic(const Duration(seconds: 1), (t) {
       if (_seconds <= 0) {
@@ -163,7 +160,6 @@ class _ClassDetailPageState extends State<ClassDetailPage>
       }
     });
     _ropeAnim.forward(from: 0);
-    // cross left boundary → team1 wins, cross right boundary → team2 wins
     if (_ropeOffset <= -1.0) {
       _endGame(winner: 1);
     } else if (_ropeOffset >= 1.0) {
@@ -219,10 +215,7 @@ class _ClassDetailPageState extends State<ClassDetailPage>
             Icon(icon, color: color, size: 22),
             const SizedBox(width: 12),
             Text(label,
-                style: TextStyle(
-                    color: color,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold)),
+                style: TextStyle(color: color, fontSize: 16, fontWeight: FontWeight.bold)),
           ],
         ),
       ),
@@ -230,14 +223,172 @@ class _ClassDetailPageState extends State<ClassDetailPage>
   }
 
   void _showResult({int? winner}) {
-    if (winner == 1) {
-    } else if (winner == 2) {
-    } else if (_team1Score > _team2Score) {
-      winner = 1;
-    } else if (_team2Score > _team1Score) {
-      winner = 2;
+    if (winner == null) {
+      if (_team1Score > _team2Score) winner = 1;
+      else if (_team2Score > _team1Score) winner = 2;
     }
     setState(() => _winnerTeam = winner);
+
+    // Show time-up popup when timer ends (no rope boundary crossed)
+    // winnerTeam overlay handles rope-win; for time-up show dialog
+    _showTimeUpDialog(winner);
+  }
+
+  void _showTimeUpDialog(int? winner) {
+    Future.delayed(const Duration(milliseconds: 200), () {
+      if (!mounted) return;
+      final isDrawGame = winner == null;
+      final winAccent = winner == 1
+          ? const Color(0xFF42A5F5)
+          : winner == 2
+              ? const Color(0xFFEF5350)
+              : Colors.amber;
+
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        barrierColor: Colors.black.withOpacity(0.70),
+        builder: (ctx) => Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: EdgeInsets.zero,
+          child: Center(
+            child: SizedBox(
+              width: 320,
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1A1A2E),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: winAccent.withOpacity(0.6), width: 1.5),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // ── Top row: icon + title + result ──
+                    Row(
+                      children: [
+                        Icon(Icons.timer_off_rounded, color: winAccent, size: 28),
+                        const SizedBox(width: 10),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              "TIME'S UP!",
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: 2,
+                              ),
+                            ),
+                            Text(
+                              isDrawGame ? "It's a Draw!" : 'Team $winner Wins!',
+                              style: TextStyle(
+                                color: winAccent,
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 12),
+                    Divider(color: Colors.white12, height: 1),
+                    const SizedBox(height: 12),
+
+                    // ── Score row ──
+                    Row(
+                      children: [
+                        // Team 1 score
+                        Expanded(
+                          child: _ScoreCard(
+                            label: 'TEAM 1',
+                            score: _team1Score,
+                            color: const Color(0xFF1565C0),
+                            accent: const Color(0xFF42A5F5),
+                            isWinner: winner == 1,
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 10),
+                          child: Text('VS',
+                              style: TextStyle(
+                                  color: Colors.white30,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold)),
+                        ),
+                        // Team 2 score
+                        Expanded(
+                          child: _ScoreCard(
+                            label: 'TEAM 2',
+                            score: _team2Score,
+                            color: const Color(0xFFC62828),
+                            accent: const Color(0xFFEF5350),
+                            isWinner: winner == 2,
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 14),
+
+                    // ── Button row ──
+                    Row(
+                      children: [
+                        // Home
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: () {
+                              Navigator.pop(ctx);
+                              Navigator.pop(context);
+                            },
+                            icon: const Icon(Icons.home_rounded, size: 15),
+                            label: const Text('HOME',
+                                style: TextStyle(
+                                    fontSize: 12, fontWeight: FontWeight.bold)),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: Colors.white60,
+                              side: const BorderSide(color: Colors.white24, width: 1),
+                              padding: const EdgeInsets.symmetric(vertical: 10),
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10)),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        // Play Again
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: () {
+                              Navigator.pop(ctx);
+                              _startGame();
+                            },
+                            icon: const Icon(Icons.restart_alt_rounded, size: 15),
+                            label: const Text('PLAY AGAIN',
+                                style: TextStyle(
+                                    fontSize: 12, fontWeight: FontWeight.bold)),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.amber,
+                              foregroundColor: Colors.black,
+                              padding: const EdgeInsets.symmetric(vertical: 10),
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10)),
+                              elevation: 0,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    });
   }
 
   @override
@@ -247,12 +398,8 @@ class _ClassDetailPageState extends State<ClassDetailPage>
       body: SafeArea(
         child: Stack(
           children: [
-            // Full page background
             Positioned.fill(
-              child: Image.asset(
-                'assets/background.jpg',
-                fit: BoxFit.cover,
-              ),
+              child: Image.asset('assets/background.jpg', fit: BoxFit.cover),
             ),
             Column(
               children: [
@@ -313,14 +460,12 @@ class _ClassDetailPageState extends State<ClassDetailPage>
                 ),
               ],
             ),
-            // Full page winner overlay
+            // Winner overlay (rope boundary crossed)
             if (_winnerTeam != null)
               Positioned.fill(
                 child: Stack(
                   children: [
-                    // Full page dim
                     Container(color: Colors.black.withOpacity(0.75)),
-                    // Glow behind image
                     Center(
                       child: Container(
                         width: 300,
@@ -329,9 +474,7 @@ class _ClassDetailPageState extends State<ClassDetailPage>
                           shape: BoxShape.circle,
                           boxShadow: [
                             BoxShadow(
-                              color: (_winnerTeam == 2
-                                      ? Colors.red
-                                      : Colors.blue)
+                              color: (_winnerTeam == 2 ? Colors.red : Colors.blue)
                                   .withOpacity(0.7),
                               blurRadius: 100,
                               spreadRadius: 60,
@@ -340,7 +483,6 @@ class _ClassDetailPageState extends State<ClassDetailPage>
                         ),
                       ),
                     ),
-                    // Winner image + buttons
                     Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
@@ -396,7 +538,77 @@ class _ClassDetailPageState extends State<ClassDetailPage>
   }
 }
 
-// ── TOP BAR ──────────────────────────────────────────────────────────────────
+// ── SCORE CARD (used inside time-up dialog) ───────────────────────────────────
+class _ScoreCard extends StatelessWidget {
+  final String label;
+  final int score;
+  final Color color;
+  final Color accent;
+  final bool isWinner;
+
+  const _ScoreCard({
+    required this.label,
+    required this.score,
+    required this.color,
+    required this.accent,
+    required this.isWinner,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 10),
+      decoration: BoxDecoration(
+        color: color.withOpacity(isWinner ? 0.30 : 0.12),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: accent.withOpacity(isWinner ? 0.8 : 0.3),
+          width: isWinner ? 2 : 1,
+        ),
+      ),
+      child: Column(
+        children: [
+          Text(label,
+              style: TextStyle(
+                color: accent,
+                fontSize: 10,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 1.5,
+              )),
+          const SizedBox(height: 8),
+          Text(
+            '$score',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 36,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          if (isWinner) ...[
+            const SizedBox(height: 6),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              decoration: BoxDecoration(
+                color: accent.withOpacity(0.25),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text('WINNER 🏆',
+                  style: TextStyle(
+                    color: accent,
+                    fontSize: 9,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1,
+                  )),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+// ── TOP BAR ───────────────────────────────────────────────────────────────────
 class _TopBar extends StatelessWidget {
   final String className;
   final int seconds;
@@ -431,7 +643,6 @@ class _TopBar extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Row(
         children: [
-          // Back + class name
           IconButton(
             icon: const Icon(Icons.home, color: Colors.white70, size: 22),
             onPressed: onHome,
@@ -440,10 +651,7 @@ class _TopBar extends StatelessWidget {
           ),
           const SizedBox(width: 6),
           Text(className,
-              style: const TextStyle(
-                  color: Colors.white54, fontSize: 13)),
-
-          // Title center
+              style: const TextStyle(color: Colors.white54, fontSize: 13)),
           const Expanded(
             child: Text(
               'TUG OF WAR: MATHEMATICS',
@@ -456,8 +664,6 @@ class _TopBar extends StatelessWidget {
               ),
             ),
           ),
-
-          // Timer or nothing (START button moved to center)
           if (gameStarted)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
@@ -470,8 +676,7 @@ class _TopBar extends StatelessWidget {
               child: Row(
                 children: [
                   Icon(Icons.timer,
-                      color: isLow ? Colors.white : Colors.blue.shade200,
-                      size: 16),
+                      color: isLow ? Colors.white : Colors.blue.shade200, size: 16),
                   const SizedBox(width: 4),
                   Text(timeStr,
                       style: TextStyle(
@@ -481,7 +686,6 @@ class _TopBar extends StatelessWidget {
                 ],
               ),
             ),
-
           const SizedBox(width: 8),
         ],
       ),
@@ -489,7 +693,7 @@ class _TopBar extends StatelessWidget {
   }
 }
 
-// ── TEAM PANEL ───────────────────────────────────────────────────────────────
+// ── TEAM PANEL ────────────────────────────────────────────────────────────────
 class _TeamPanel extends StatefulWidget {
   final int team;
   final Color color;
@@ -557,7 +761,6 @@ class _TeamPanelState extends State<_TeamPanel> {
       ),
       child: Column(
         children: [
-          // Score header
           Container(
             width: double.infinity,
             padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 7),
@@ -572,8 +775,7 @@ class _TeamPanelState extends State<_TeamPanel> {
                         fontSize: 13,
                         letterSpacing: 1.2)),
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
                   decoration: BoxDecoration(
                     color: ac,
                     borderRadius: BorderRadius.circular(12),
@@ -587,8 +789,6 @@ class _TeamPanelState extends State<_TeamPanel> {
               ],
             ),
           ),
-
-          // Question box
           Container(
             margin: const EdgeInsets.fromLTRB(6, 4, 6, 4),
             padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 6),
@@ -601,13 +801,9 @@ class _TeamPanelState extends State<_TeamPanel> {
               widget.question,
               textAlign: TextAlign.center,
               style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold),
+                  color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
             ),
           ),
-
-          // Answer display
           Container(
             margin: const EdgeInsets.symmetric(horizontal: 6),
             padding: const EdgeInsets.symmetric(vertical: 4),
@@ -626,16 +822,12 @@ class _TeamPanelState extends State<_TeamPanel> {
                   letterSpacing: 4),
             ),
           ),
-
           const SizedBox(height: 4),
-
-          // Number keypad
           Expanded(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 7),
               child: Column(
                 children: [
-                  // 1-9
                   Expanded(
                     child: GridView.count(
                       crossAxisCount: 3,
@@ -653,7 +845,6 @@ class _TeamPanelState extends State<_TeamPanel> {
                       }),
                     ),
                   ),
-                  // Bottom row: Clear | 0 | ⌫
                   Padding(
                     padding: const EdgeInsets.only(bottom: 4, top: 2),
                     child: Row(
@@ -684,7 +875,6 @@ class _TeamPanelState extends State<_TeamPanel> {
                       ],
                     ),
                   ),
-                  // Submit button
                   Padding(
                     padding: const EdgeInsets.only(bottom: 6),
                     child: SizedBox(
@@ -788,15 +978,12 @@ class _GameCenter extends StatelessWidget {
       child: Stack(
         alignment: Alignment.center,
         children: [
-          // Ground line
           Positioned(
             bottom: 80,
             left: 0,
             right: 0,
             child: Container(height: 3, color: Colors.green.shade700),
           ),
-
-          // Center dashed boundary line
           Positioned(
             top: 0,
             bottom: 0,
@@ -809,12 +996,11 @@ class _GameCenter extends StatelessWidget {
               ),
             ),
           ),
-
-          // Tug of war image
           AnimatedBuilder(
             animation: Listenable.merge([ropeAnim, tugPull]),
             builder: (context, _) {
-              final shift = ropeOffset * (MediaQuery.of(context).size.width * 0.18);
+              final shift =
+                  ropeOffset * (MediaQuery.of(context).size.width * 0.18);
               final pull = gameStarted ? tugPull.value : 0.0;
               return Align(
                 alignment: Alignment.bottomCenter,
@@ -829,8 +1015,6 @@ class _GameCenter extends StatelessWidget {
               );
             },
           ),
-
-          // Win zone indicators
           Positioned(
             left: 8,
             top: 0,
@@ -891,16 +1075,12 @@ class _GameCenter extends StatelessWidget {
               ),
             ),
           ),
-
-          // Rope progress bar at bottom
           Positioned(
             bottom: 20,
             left: 16,
             right: 16,
             child: _RopeProgressBar(offset: ropeOffset),
           ),
-
-          // Not started overlay
           if (!gameStarted)
             Positioned.fill(
               child: Container(
@@ -930,60 +1110,6 @@ class _GameCenter extends StatelessWidget {
       ),
     );
   }
-}
-
-class _RopeTension extends StatelessWidget {
-  final double offset;
-  const _RopeTension({required this.offset});
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: 160,
-      height: 20,
-      child: CustomPaint(painter: _RopePainter(offset: offset)),
-    );
-  }
-}
-
-class _RopePainter extends CustomPainter {
-  final double offset;
-  const _RopePainter({required this.offset});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = const Color(0xFF8B4513)
-      ..strokeWidth = 6
-      ..strokeCap = StrokeCap.round
-      ..style = PaintingStyle.stroke;
-
-    final path = Path();
-    path.moveTo(0, size.height / 2);
-    final tension = offset.abs() * 8;
-    for (int i = 0; i < 6; i++) {
-      final x1 = i * (size.width / 5) + size.width / 15;
-      final x2 = i * (size.width / 5) + size.width / 7;
-      final x3 = (i + 1) * (size.width / 5);
-      final wave = (i % 2 == 0 ? 1 : -1) * (4 + tension);
-      path.cubicTo(x1, size.height / 2 + wave, x2,
-          size.height / 2 - wave, x3, size.height / 2);
-    }
-    canvas.drawPath(path, paint);
-
-    // Strand marks
-    final strand = Paint()
-      ..color = const Color(0xFFA0522D)
-      ..strokeWidth = 2;
-    for (int i = 0; i < 8; i++) {
-      final x = i * (size.width / 7);
-      canvas.drawLine(Offset(x, size.height / 2 - 3),
-          Offset(x + 10, size.height / 2 + 3), strand);
-    }
-  }
-
-  @override
-  bool shouldRepaint(_RopePainter old) => old.offset != offset;
 }
 
 class _RopeProgressBar extends StatelessWidget {
